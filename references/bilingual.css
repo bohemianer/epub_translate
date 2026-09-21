@@ -1,0 +1,39 @@
+/* EPUB 优雅双语对照排版样式表 */
+.epub-trans-block {
+    margin-top: 0.35em !important;
+    margin-bottom: 1.1em !important;
+    color: #4a5568 !important;
+    font-size: 0.95em !important;
+    line-height: 1.68 !important;
+    font-family: -apple-system, "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", "WenQuanYi Micro Hei", sans-serif !important;
+    text-align: justify !important;
+}
+
+h1.epub-trans-block, 
+h2.epub-trans-block, 
+h3.epub-trans-block, 
+h4.epub-trans-block, 
+h5.epub-trans-block, 
+h6.epub-trans-block {
+    color: #2b6cb0 !important;
+    font-weight: 500 !important;
+    margin-top: 0.25em !important;
+    margin-bottom: 0.85em !important;
+}
+
+blockquote.epub-trans-block {
+    color: #718096 !important;
+    border-left: 3px solid #cbd5e0 !important;
+    padding-left: 0.8em !important;
+    margin-left: 0.5em !important;
+}
+
+/* 夜间模式自动适配 */
+@media (prefers-color-scheme: dark) {
+    .epub-trans-block {
+        color: #a0aec0 !important;
+    }
+    h1.epub-trans-block, h2.epub-trans-block, h3.epub-trans-block {
+        color: #63b3ed !important;
+    }
+}
