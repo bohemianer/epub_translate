@@ -8,7 +8,7 @@
 
 彻底攻克长篇外文电子书翻译中的核心痛点：
 1. **破折号长句破碎翻译腔**：自动解构英语多破折号长句，重塑为优雅地道的中文意合母语叙事。
-2. **中文首行缩紧与缺失缩进**：内置出版级中文排版引擎，正文智能强制缩进 2 字符（`2em`），标题/引文/图片/居中段落精准豁免。
+2. **中文首行缩紧与缺失缩进**：内置出版级中文排版引擎，正文智能强制缩进 1 个汉字（`1em`，移动端黄金标准），标题/引文/图片/居中段落精准豁免。
 3. **上下文割裂与代词混淆**：智能切片引擎自动携带三层滑动窗口上下文（前序末尾 + 后续起始）。
 4. **DOM 结构与跳转破坏**：100% 结构保留，尾注、正文锚点、目录超链接与原生系统阅读器目录（NCX/NAV）全链路打通。
 5. **漏段吞字与复读幻觉**：硬性质检守门（QA Guardrails）与单段纠错重试（Healing）。
@@ -25,7 +25,7 @@
 - **单句限单破折号守则**：全句至多在文末保留一个破折号用于戏剧性转折或余韵收束，单句严禁出现多对破折号。
 
 ### 2. 出版级中文排版引擎（Chinese Publication Typography）
-- **正文标准缩进**：依据 GB/T 15834 标点规范，所有正文自然段落强制首行缩进 2 汉字字符（`text-indent: 2em !important;`），行高 `1.75`，两端对齐。
+- **正文标准缩进**：默认采用**移动端与现代电子阅读器主流黄金标准——首行缩进 1 个汉字（`text-indent: 1em !important;`）**，视觉紧凑精致，消除手机窄屏过度留白；亦可通过 `--indent 2em` 切换为传统纸书大部头 2 个汉字缩进。行高 `1.75`，两端对齐。
 - **智能排版白名单（豁免防偏心）**：自动识别并豁免各级标题（`h1-h6`、`.title`、`.chapter-title`）、引文块（`blockquote`）、列表项（`li`）、表格（`td/th`）、居中行（`.center`）与图文插图（`p:has(img)`、`.illustration`）。
 - **全局与内嵌双重防御**：支持 `inject-blocks` 页面级内嵌样式注入与 `fix-style` 全局外部样式表（`stylesheet.css`）一键穿透修复。
 
@@ -40,8 +40,8 @@
 | `unpack <epub> <work_dir>` | 解包 EPUB，解析元数据与阅读顺序（Spine），生成进度断点追踪。 |
 | `extract-blocks <xhtml> -o <out.json>` | 精准抽取段落与标题，以 `⟦NOTE_N⟧` 占位符隔离保护尾注。 |
 | `slice-batches <blocks.json> <out_dir>` | 智能切片引擎，划分 1,500 ~ 2,000 词批次并封装三层滑动窗口上下文。 |
-| `inject-blocks <xhtml> <trans.json> <out.xhtml> [--mode mono\|bilingual]` | 高保真回填译文，注入出版级首行缩进与样式，保留标题内嵌层级标签。 |
-| `fix-style <work_dir> [--mode mono\|bilingual]` | 全局样式修复引擎，在全局 CSS 样式表中强制注入 2em 首行缩进规则。 |
+| `inject-blocks <xhtml> <trans.json> <out.xhtml> [--mode mono\|bilingual] [--indent 1em\|2em]` | 高保真回填译文，注入出版级首行缩进与样式，保留标题内嵌层级标签。 |
+| `fix-style <work_dir> [--mode mono\|bilingual] [--indent 1em\|2em]` | 全局样式修复引擎，在全局 CSS 样式表中强制注入 1em（或 2em）首行缩进规则。 |
 | `sync-ncx <work_dir> <toc_trans.json> [--title "..."]` | 同步阅读器侧边栏导航目录（`toc.ncx` / `nav.xhtml`）为纯中文标签。 |
 | `qa-check <src.json> <trans.json>` | 检验索引 1:1 对齐、字符长度离群值（防漏译/复读），输出纠错清单。 |
 | `glossary-scan <work_dir> -c 5` | 扫描前序章节，自动提取高频专有名词与术语表。 |

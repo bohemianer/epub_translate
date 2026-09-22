@@ -9,9 +9,9 @@
     text-align: justify !important;
 }
 
-/* 译文正文自然段落首行缩进 2 字符 */
+/* 译文正文自然段落首行缩进 1 个汉字（移动端黄金阅读比例） */
 p.epub-trans-block {
-    text-indent: 2em !important;
+    text-indent: 1em !important;
 }
 
 /* 标题、引文、居中块严格豁免首行缩进 */

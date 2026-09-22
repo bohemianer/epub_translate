@@ -32,9 +32,9 @@ DEFAULT_BILINGUAL_CSS = """
     text-align: justify !important;
 }
 
-/* 译文正文自然段落首行缩进 2 字符 */
+/* 译文正文自然段落首行缩进 1 个汉字（移动端黄金阅读比例） */
 p.epub-trans-block {
-    text-indent: 2em !important;
+    text-indent: 1em !important;
 }
 
 /* 标题、引文、居中块严格豁免首行缩进 */
@@ -74,16 +74,16 @@ blockquote.epub-trans-block {
 }
 """
 
-# 出版级中文单语排版 CSS（强制首行缩进 2 字符，排版对齐，严格豁免标题/引用/居中/图片）
+# 出版级中文单语排版 CSS（强制首行缩进 1 个汉字，排版对齐，严格豁免标题/引用/居中/图片）
 DEFAULT_MONO_CSS = """
 /* === EPUB 中文出版级单语正文排版样式 === */
 body {
     font-family: "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", "Source Han Serif SC", "Noto Serif CJK SC", serif, -apple-system, sans-serif !important;
 }
 
-/* 中文正文自然段落首行缩进 2 字符，两端对齐，舒适行高 */
+/* 中文正文自然段落首行缩进 1 个汉字（移动端黄金阅读比例），两端对齐，舒适行高 */
 p {
-    text-indent: 2em !important;
+    text-indent: 1em !important;
     text-align: justify !important;
     line-height: 1.75 !important;
     margin-top: 0.25em !important;
@@ -439,7 +439,7 @@ def qa_check(src_json_path, trans_json_path):
     return report
 
 
-def inject_blocks(xhtml_path, trans_json_path, output_xhtml_path, mode="mono"):
+def inject_blocks(xhtml_path, trans_json_path, output_xhtml_path, mode="mono", indent="1em"):
     """
     高保真 DOM 注入引擎：
     1. 还原 ⟦NOTE_N⟧ 占位符为原始 <sup ...><a href="...">N</a></sup> 尾注超链接；
@@ -587,25 +587,31 @@ def inject_blocks(xhtml_path, trans_json_path, output_xhtml_path, mode="mono"):
 
         modified_content = modified_content[:m.start()] + replacement + modified_content[m.end():]
 
+    mono_css = DEFAULT_MONO_CSS
+    bilingual_css = DEFAULT_BILINGUAL_CSS
+    if indent != "1em":
+        mono_css = mono_css.replace("text-indent: 1em !important;", f"text-indent: {indent} !important;")
+        bilingual_css = bilingual_css.replace("text-indent: 1em !important;", f"text-indent: {indent} !important;")
+
     if mode == "bilingual" and "</head>" in modified_content and "epub-bilingual-style" not in modified_content and "epub-trans-block" not in modified_content:
-        style_block = f"<style type=\"text/css\" id=\"epub-bilingual-style\">\n{DEFAULT_BILINGUAL_CSS}\n</style>\n</head>"
+        style_block = f"<style type=\"text/css\" id=\"epub-bilingual-style\">\n{bilingual_css}\n</style>\n</head>"
         modified_content = modified_content.replace("</head>", style_block, 1)
     elif mode == "mono" and "</head>" in modified_content and "epub-mono-style" not in modified_content:
-        style_block = f"<style type=\"text/css\" id=\"epub-mono-style\">\n{DEFAULT_MONO_CSS}\n</style>\n</head>"
+        style_block = f"<style type=\"text/css\" id=\"epub-mono-style\">\n{mono_css}\n</style>\n</head>"
         modified_content = modified_content.replace("</head>", style_block, 1)
 
     with open(output_xhtml_path, 'w', encoding='utf-8') as f:
         f.write(modified_content)
 
-    print(f"[+] 注入翻译成功 -> {output_xhtml_path} (模式: {mode})")
+    print(f"[+] 注入翻译成功 -> {output_xhtml_path} (模式: {mode}, 缩进: {indent})")
     return True
 
 
-def fix_style(work_dir, mode="mono"):
+def fix_style(work_dir, mode="mono", indent="1em"):
     """
     出版级排版修复引擎：
     在 EPUB 的所有全局 CSS 文件（如 stylesheet.css、page_styles.css）中注入
-    出版级中文首行缩进（2em）、两端对齐与舒适行距规则，
+    出版级中文首行缩进（默认 1em 即空 1 个中文字）、两端对齐与舒适行距规则，
     自动豁免标题、引用、列表、表格、图片与居中段落，确保各类阅读器强制生效。
     """
     raw_dir = os.path.join(work_dir, "raw")
@@ -620,6 +626,9 @@ def fix_style(work_dir, mode="mono"):
                 css_files.append(os.path.join(root, f))
 
     css_to_inject = DEFAULT_MONO_CSS if mode == "mono" else DEFAULT_BILINGUAL_CSS
+    if indent != "1em":
+        css_to_inject = css_to_inject.replace("text-indent: 1em !important;", f"text-indent: {indent} !important;")
+
     marker = "/* === EPUB 中文出版级" if mode == "mono" else "/* === EPUB 智能双语出版级"
 
     if not css_files:
@@ -634,7 +643,7 @@ def fix_style(work_dir, mode="mono"):
             continue
         with open(css_path, "a", encoding="utf-8") as f:
             f.write("\n\n" + css_to_inject + "\n")
-        print(f"[+] 成功将出版级中文排版样式注入: {os.path.basename(css_path)}")
+        print(f"[+] 成功将出版级中文排版样式注入（首行缩进: {indent}）: {os.path.basename(css_path)}")
 
     return True
 
@@ -772,6 +781,7 @@ def main():
     p_inject.add_argument("trans_json", help="译文 JSON 路径")
     p_inject.add_argument("output", help="输出 XHTML 路径")
     p_inject.add_argument("--mode", choices=["bilingual", "mono"], default="bilingual", help="模式: bilingual 或 mono")
+    p_inject.add_argument("--indent", default="1em", help="首行缩进大小（默认 1em 即空 1 个中文字，可选 2em）")
 
     # qa-check
     p_qa = subparsers.add_parser("qa-check", help="自动化质量守护与单段纠错检测")
@@ -795,9 +805,10 @@ def main():
     p_ncx.add_argument("--title", default=None, help="可选：全书中英文标题")
 
     # fix-style
-    p_fix = subparsers.add_parser("fix-style", help="修复全书 CSS 样式表，注入出版级中文首行缩进（2em）与行距")
+    p_fix = subparsers.add_parser("fix-style", help="修复全书 CSS 样式表，注入出版级中文首行缩进与行距")
     p_fix.add_argument("work_dir", help="工作区目录")
     p_fix.add_argument("--mode", choices=["bilingual", "mono"], default="mono", help="模式: mono（默认）或 bilingual")
+    p_fix.add_argument("--indent", default="1em", help="首行缩进大小（默认 1em 即空 1 个中文字，可选 2em）")
 
     args = parser.parse_args()
 
@@ -808,7 +819,7 @@ def main():
     elif args.command == "slice-batches":
         slice_batches(args.blocks_json, args.output_dir, args.max_words, args.max_blocks)
     elif args.command == "inject-blocks":
-        inject_blocks(args.xhtml, args.trans_json, args.output, args.mode)
+        inject_blocks(args.xhtml, args.trans_json, args.output, args.mode, args.indent)
     elif args.command == "qa-check":
         res = qa_check(args.src_json, args.trans_json)
         print(json.dumps(res, ensure_ascii=False, indent=2))
@@ -817,7 +828,7 @@ def main():
     elif args.command == "sync-ncx":
         sync_ncx(args.work_dir, args.toc_trans_json, args.title)
     elif args.command == "fix-style":
-        fix_style(args.work_dir, args.mode)
+        fix_style(args.work_dir, args.mode, args.indent)
     elif args.command == "pack":
         pack_epub(args.work_dir, args.output_epub)
 

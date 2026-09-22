@@ -3,9 +3,9 @@ body {
     font-family: "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", "Source Han Serif SC", "Noto Serif CJK SC", serif, -apple-system, sans-serif !important;
 }
 
-/* 中文正文自然段落首行缩进 2 字符，两端对齐，舒适行高 */
+/* 中文正文自然段落首行缩进 1 个汉字（移动端黄金阅读比例），两端对齐，舒适行高 */
 p {
-    text-indent: 2em !important;
+    text-indent: 1em !important;
     text-align: justify !important;
     line-height: 1.75 !important;
     margin-top: 0.25em !important;

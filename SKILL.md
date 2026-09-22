@@ -24,8 +24,8 @@ description: >-
   - `unpack <epub> <work_dir>`：解包 EPUB，解析 `container.xml`、`content.opf`，输出 `book_info.json` 与断点追踪 `progress.json`。
   - `extract-blocks <xhtml> -o <blocks.json>`：安全抽取章节内段落与标题标签（`p`, `h1-h6`, `li`, `blockquote` 等），建立原子索引。
   - `slice-batches <blocks.json> <out_dir> [--max-words 1800]`：**智能批次切片引擎**。按 1,500 ~ 2,000 词自动划分批次，并封装**三层滑动窗口上下文**（前序末尾 2 段 + 后续起始 1 段）。
-  - `inject-blocks <xhtml> <trans.json> <out_xhtml> --mode [bilingual|mono]`：回填译文，注入深色/浅色自适应高雅排版样式。自动注入**中文出版级首行缩进（2em）**，智能豁免各级标题、引言块、居中段落、插图及表格。自动保留原书各级标题的内嵌层级样式包裹标签（`<span class="bold">`、`<span class="italic">` 等），确保排版视觉阶梯感与原书完全一致。
-  - `fix-style <work_dir> [--mode mono|bilingual]`：**全局排版样式修复引擎**。在 EPUB 的所有全局 CSS 样式表（`stylesheet.css` 等）中追加出版级中文段落排版规则，确保各类阅读器（Apple Books、微信读书、Kindle 等）强制生效标准 2 字符缩进与舒适行距。
+  - `inject-blocks <xhtml> <trans.json> <out_xhtml> [--mode bilingual|mono] [--indent 1em|2em]`：回填译文，注入深色/浅色自适应高雅排版样式。自动注入**中文出版级首行缩进（默认 1em 即空 1 个中文字，移动端主流黄金排版）**，智能豁免各级标题、引言块、居中段落、插图及表格。自动保留原书各级标题的内嵌层级样式包裹标签（`<span class="bold">`、`<span class="italic">` 等），确保排版视觉阶梯感与原书完全一致。
+  - `fix-style <work_dir> [--mode mono|bilingual] [--indent 1em|2em]`：**全局排版样式修复引擎**。在 EPUB 的所有全局 CSS 样式表（`stylesheet.css` 等）中追加出版级中文段落排版规则，确保各类阅读器（Apple Books、微信读书、Kindle 等）强制生效标准 1 字符（1em）缩进与舒适行距。
   - `qa-check <src.json> <trans.json>`：**程序化硬性质检**。检验索引数量 1:1 对齐、字符长度离群值（防漏译/复读）、关键数字与年代遗失检测，自动输出单段纠错清单。
   - `glossary-scan <work_dir> -c 5`：扫描全书前序章节，提取高频大写专有名词与核心金融/科技概念。
   - `sync-ncx <work_dir> <toc_trans.json> [--title "..."]`：**底层导航目录同步**。将翻译后的章节名称同步刷入 `toc.ncx` / `nav.xhtml`，确保阅读器自带的侧边栏/弹出式原生系统目录 100% 显示纯中文。
@@ -44,7 +44,7 @@ description: >-
 4. **单句限单破折号守则**：单句严禁出现多对破折号，全句至多在文末保留一个破折号用于戏剧性转折或余韵收束。
 
 ### 2. 出版级中文排版规范（Chinese Typography）
-- **正文首行缩进**：依据现代中文出版规范，正文自然段落必须严格缩进 2 汉字字符（`text-indent: 2em !important;`）。
+- **正文首行缩进**：默认采用**移动端与现代电子阅读器主流黄金标准——首行缩进 1 个汉字（`text-indent: 1em !important;`）**，视觉紧凑精致，消除手机窄屏过度留白；亦可通过 `--indent 2em` 切换为传统纸书大部头 2 个汉字缩进。
 - **豁免白名单**：标题（`h1-h6`、`.title`、`.chapter-title`）、引文块（`blockquote`）、列表项（`li`）、表格（`td/th`）、居中行（`.center`）与图文插图（`p:has(img)`、`.illustration`）严格禁止首行缩进（`text-indent: 0 !important;`）。
 
 ---
