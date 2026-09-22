@@ -1,24 +1,27 @@
-/* EPUB 优雅双语对照排版样式表 */
+/* === EPUB 智能双语出版级对照样式表 === */
 .epub-trans-block {
     margin-top: 0.35em !important;
-    margin-bottom: 1.1em !important;
+    margin-bottom: 1.15em !important;
     color: #4a5568 !important;
     font-size: 0.95em !important;
-    line-height: 1.68 !important;
-    font-family: -apple-system, "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", "WenQuanYi Micro Hei", sans-serif !important;
+    line-height: 1.72 !important;
+    font-family: "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", "Source Han Serif SC", "Noto Serif CJK SC", serif, -apple-system, sans-serif !important;
     text-align: justify !important;
 }
 
-h1.epub-trans-block, 
-h2.epub-trans-block, 
-h3.epub-trans-block, 
-h4.epub-trans-block, 
-h5.epub-trans-block, 
-h6.epub-trans-block {
+/* 译文正文自然段落首行缩进 2 字符 */
+p.epub-trans-block {
+    text-indent: 2em !important;
+}
+
+/* 标题、引文、居中块严格豁免首行缩进 */
+h1.epub-trans-block, h2.epub-trans-block, h3.epub-trans-block, 
+h4.epub-trans-block, h5.epub-trans-block, h6.epub-trans-block {
     color: #2b6cb0 !important;
     font-weight: 500 !important;
     margin-top: 0.25em !important;
     margin-bottom: 0.85em !important;
+    text-indent: 0 !important;
 }
 
 blockquote.epub-trans-block {
@@ -26,6 +29,12 @@ blockquote.epub-trans-block {
     border-left: 3px solid #cbd5e0 !important;
     padding-left: 0.8em !important;
     margin-left: 0.5em !important;
+    text-indent: 0 !important;
+}
+
+.center.epub-trans-block, p.center.epub-trans-block, p[class*="center"].epub-trans-block {
+    text-indent: 0 !important;
+    text-align: center !important;
 }
 
 /* 夜间模式自动适配 */
@@ -35,5 +44,9 @@ blockquote.epub-trans-block {
     }
     h1.epub-trans-block, h2.epub-trans-block, h3.epub-trans-block {
         color: #63b3ed !important;
+    }
+    blockquote.epub-trans-block {
+        border-left-color: #4a5568 !important;
+        color: #cbd5e0 !important;
     }
 }

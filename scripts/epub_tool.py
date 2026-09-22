@@ -27,17 +27,24 @@ DEFAULT_BILINGUAL_CSS = """
     margin-bottom: 1.15em !important;
     color: #4a5568 !important;
     font-size: 0.95em !important;
-    line-height: 1.68 !important;
-    font-family: -apple-system, "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", "WenQuanYi Micro Hei", sans-serif !important;
+    line-height: 1.72 !important;
+    font-family: "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", "Source Han Serif SC", "Noto Serif CJK SC", serif, -apple-system, sans-serif !important;
     text-align: justify !important;
 }
 
+/* 译文正文自然段落首行缩进 2 字符 */
+p.epub-trans-block {
+    text-indent: 2em !important;
+}
+
+/* 标题、引文、居中块严格豁免首行缩进 */
 h1.epub-trans-block, h2.epub-trans-block, h3.epub-trans-block, 
 h4.epub-trans-block, h5.epub-trans-block, h6.epub-trans-block {
     color: #2b6cb0 !important;
     font-weight: 500 !important;
     margin-top: 0.25em !important;
     margin-bottom: 0.85em !important;
+    text-indent: 0 !important;
 }
 
 blockquote.epub-trans-block {
@@ -45,6 +52,12 @@ blockquote.epub-trans-block {
     border-left: 3px solid #cbd5e0 !important;
     padding-left: 0.8em !important;
     margin-left: 0.5em !important;
+    text-indent: 0 !important;
+}
+
+.center.epub-trans-block, p.center.epub-trans-block, p[class*="center"].epub-trans-block {
+    text-indent: 0 !important;
+    text-align: center !important;
 }
 
 @media (prefers-color-scheme: dark) {
@@ -58,6 +71,51 @@ blockquote.epub-trans-block {
         border-left-color: #4a5568 !important;
         color: #cbd5e0 !important;
     }
+}
+"""
+
+# 出版级中文单语排版 CSS（强制首行缩进 2 字符，排版对齐，严格豁免标题/引用/居中/图片）
+DEFAULT_MONO_CSS = """
+/* === EPUB 中文出版级单语正文排版样式 === */
+body {
+    font-family: "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", "Source Han Serif SC", "Noto Serif CJK SC", serif, -apple-system, sans-serif !important;
+}
+
+/* 中文正文自然段落首行缩进 2 字符，两端对齐，舒适行高 */
+p {
+    text-indent: 2em !important;
+    text-align: justify !important;
+    line-height: 1.75 !important;
+    margin-top: 0.25em !important;
+    margin-bottom: 0.25em !important;
+}
+
+/* 严格豁免清单：标题、引言引用、列表、表格、居中行、图文说明绝对不缩进 */
+h1, h2, h3, h4, h5, h6,
+h1 p, h2 p, h3 p, h4 p, h5 p, h6 p,
+blockquote, blockquote p, li, li p, dt, dd, td, th,
+.title, .subtitle, .chapter-title, .heading, .center,
+p.title, p.subtitle, p.chapter-title, p.heading, p.center,
+p[class*="title"], p[class*="heading"], p[class*="center"],
+p:has(img), p:has(svg), p:has(picture) {
+    text-indent: 0 !important;
+}
+
+p.center, p[class*="center"], div.center {
+    text-align: center !important;
+    text-indent: 0 !important;
+}
+
+blockquote {
+    margin-left: 1.5em !important;
+    margin-right: 1.5em !important;
+    padding-left: 0.8em !important;
+    border-left: 3px solid #cbd5e0 !important;
+}
+
+blockquote p {
+    text-indent: 0 !important;
+    line-height: 1.65 !important;
 }
 """
 
@@ -513,19 +571,71 @@ def inject_blocks(xhtml_path, trans_json_path, output_xhtml_path, mode="mono"):
                     # 原文整体被层级样式标签包裹（标题或强调块），严格保留其内嵌视觉层级结构
                     restored_trans = f"{p_str}{restored_trans}{s_str}"
 
-            # 常规正文段落（已完整还原尾注及标题内嵌层级样式）
-            replacement = f"<{tag}{attrs}>{restored_trans}</{tag}>"
+            if mode == "bilingual":
+                # 双语对照模式：保留原英文段落，在下方追加出版级高雅译文段落
+                trans_attrs = attrs
+                if 'class="' in trans_attrs:
+                    trans_attrs = re.sub(r'class="([^"]*)"', r'class="\1 epub-trans-block"', trans_attrs)
+                elif "class='" in trans_attrs:
+                    trans_attrs = re.sub(r"class='([^']*)'", r"class='\1 epub-trans-block'", trans_attrs)
+                else:
+                    trans_attrs = f' class="epub-trans-block"{trans_attrs}'
+                replacement = f"<{tag}{attrs}>{inner_html}</{tag}>\n<{tag}{trans_attrs}>{restored_trans}</{tag}>"
+            else:
+                # 纯中文模式：直接高保真替换
+                replacement = f"<{tag}{attrs}>{restored_trans}</{tag}>"
 
         modified_content = modified_content[:m.start()] + replacement + modified_content[m.end():]
 
-    if mode == "bilingual" and "</head>" in modified_content and "epub-trans-block" not in modified_content:
-        style_block = f"<style type=\"text/css\">\n{DEFAULT_BILINGUAL_CSS}\n</style>\n</head>"
+    if mode == "bilingual" and "</head>" in modified_content and "epub-bilingual-style" not in modified_content and "epub-trans-block" not in modified_content:
+        style_block = f"<style type=\"text/css\" id=\"epub-bilingual-style\">\n{DEFAULT_BILINGUAL_CSS}\n</style>\n</head>"
+        modified_content = modified_content.replace("</head>", style_block, 1)
+    elif mode == "mono" and "</head>" in modified_content and "epub-mono-style" not in modified_content:
+        style_block = f"<style type=\"text/css\" id=\"epub-mono-style\">\n{DEFAULT_MONO_CSS}\n</style>\n</head>"
         modified_content = modified_content.replace("</head>", style_block, 1)
 
     with open(output_xhtml_path, 'w', encoding='utf-8') as f:
         f.write(modified_content)
 
     print(f"[+] 注入翻译成功 -> {output_xhtml_path} (模式: {mode})")
+    return True
+
+
+def fix_style(work_dir, mode="mono"):
+    """
+    出版级排版修复引擎：
+    在 EPUB 的所有全局 CSS 文件（如 stylesheet.css、page_styles.css）中注入
+    出版级中文首行缩进（2em）、两端对齐与舒适行距规则，
+    自动豁免标题、引用、列表、表格、图片与居中段落，确保各类阅读器强制生效。
+    """
+    raw_dir = os.path.join(work_dir, "raw")
+    if not os.path.exists(raw_dir):
+        print(f"[-] 找不到源目录: {raw_dir}", file=sys.stderr)
+        return False
+
+    css_files = []
+    for root, dirs, files in os.walk(raw_dir):
+        for f in files:
+            if f.lower().endswith(".css"):
+                css_files.append(os.path.join(root, f))
+
+    css_to_inject = DEFAULT_MONO_CSS if mode == "mono" else DEFAULT_BILINGUAL_CSS
+    marker = "/* === EPUB 中文出版级" if mode == "mono" else "/* === EPUB 智能双语出版级"
+
+    if not css_files:
+        print("[!] 未找到外部 CSS 样式表文件，样式已通过 inject-blocks 内嵌注入。")
+        return True
+
+    for css_path in css_files:
+        with open(css_path, "r", encoding="utf-8", errors="replace") as f:
+            content = f.read()
+        if marker in content:
+            print(f"[*] 已存在出版级中文样式，跳过: {os.path.basename(css_path)}")
+            continue
+        with open(css_path, "a", encoding="utf-8") as f:
+            f.write("\n\n" + css_to_inject + "\n")
+        print(f"[+] 成功将出版级中文排版样式注入: {os.path.basename(css_path)}")
+
     return True
 
 
@@ -684,6 +794,11 @@ def main():
     p_ncx.add_argument("toc_trans_json", help="目录翻译 JSON 文件路径")
     p_ncx.add_argument("--title", default=None, help="可选：全书中英文标题")
 
+    # fix-style
+    p_fix = subparsers.add_parser("fix-style", help="修复全书 CSS 样式表，注入出版级中文首行缩进（2em）与行距")
+    p_fix.add_argument("work_dir", help="工作区目录")
+    p_fix.add_argument("--mode", choices=["bilingual", "mono"], default="mono", help="模式: mono（默认）或 bilingual")
+
     args = parser.parse_args()
 
     if args.command == "unpack":
@@ -701,6 +816,8 @@ def main():
         scan_glossary(args.work_dir, args.chapters)
     elif args.command == "sync-ncx":
         sync_ncx(args.work_dir, args.toc_trans_json, args.title)
+    elif args.command == "fix-style":
+        fix_style(args.work_dir, args.mode)
     elif args.command == "pack":
         pack_epub(args.work_dir, args.output_epub)
 

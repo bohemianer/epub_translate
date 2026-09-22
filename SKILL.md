@@ -3,6 +3,8 @@ name: epub-translator
 description: >-
   专业级 EPUB 电子书全书翻译与出版排版专家。支持中英双语对照与纯中文两种排版模式；
   保持原书 DOM 结构、目录跳转、内嵌样式与插图；内置前置专有名词术语库（Glossary）抽取、
+  破折号长句解构与重组准则（彻底消解英文多破折号翻译腔）、
+  自动化中文出版级首行缩进（2em）与行距自适应渲染、
   三步级联审校流（Agentic 3-Pass Refinement）、自动化漏译错对齐质检（QA Guardrails）
   及符合国际 EPUB 3.0/2.0 标准规范的重打包（mimetype 首位无压缩存储）。
   Triggers: "翻译epub", "翻译电子书", "epub双语", "电子书翻译", "epub翻译", "translate epub", "epub对照", "制作双语电子书"
@@ -10,7 +12,7 @@ description: >-
 
 # EPUB 电子书专业翻译技能规范 (epub-translator)
 
-本 Skill 专为整本大部头长篇著作设计，彻底解决**长文翻译中的上下文割裂、漏段吞字、术语漂移、代词混淆、排版损坏与阅读器兼容性**等难题。
+本 Skill 专为整本大部头长篇著作设计，彻底解决**长文翻译中的上下文割裂、多破折号长句破碎翻译腔、中文首行缩紧/缺缩进排版混乱、漏段吞字、术语漂移、代词混淆、排版损坏与阅读器兼容性**等难题。
 
 ---
 
@@ -22,11 +24,28 @@ description: >-
   - `unpack <epub> <work_dir>`：解包 EPUB，解析 `container.xml`、`content.opf`，输出 `book_info.json` 与断点追踪 `progress.json`。
   - `extract-blocks <xhtml> -o <blocks.json>`：安全抽取章节内段落与标题标签（`p`, `h1-h6`, `li`, `blockquote` 等），建立原子索引。
   - `slice-batches <blocks.json> <out_dir> [--max-words 1800]`：**智能批次切片引擎**。按 1,500 ~ 2,000 词自动划分批次，并封装**三层滑动窗口上下文**（前序末尾 2 段 + 后续起始 1 段）。
-  - `inject-blocks <xhtml> <trans.json> <out_xhtml> --mode [bilingual|mono]`：回填译文，注入深色/浅色自适应高雅双语排版样式。自动保留原书各级标题的内嵌层级样式包裹标签（`<span class="bold">`、`<span class="italic">` 等），确保排版视觉阶梯感与原书完全一致。
+  - `inject-blocks <xhtml> <trans.json> <out_xhtml> --mode [bilingual|mono]`：回填译文，注入深色/浅色自适应高雅排版样式。自动注入**中文出版级首行缩进（2em）**，智能豁免各级标题、引言块、居中段落、插图及表格。自动保留原书各级标题的内嵌层级样式包裹标签（`<span class="bold">`、`<span class="italic">` 等），确保排版视觉阶梯感与原书完全一致。
+  - `fix-style <work_dir> [--mode mono|bilingual]`：**全局排版样式修复引擎**。在 EPUB 的所有全局 CSS 样式表（`stylesheet.css` 等）中追加出版级中文段落排版规则，确保各类阅读器（Apple Books、微信读书、Kindle 等）强制生效标准 2 字符缩进与舒适行距。
   - `qa-check <src.json> <trans.json>`：**程序化硬性质检**。检验索引数量 1:1 对齐、字符长度离群值（防漏译/复读）、关键数字与年代遗失检测，自动输出单段纠错清单。
   - `glossary-scan <work_dir> -c 5`：扫描全书前序章节，提取高频大写专有名词与核心金融/科技概念。
-  - `sync-ncx <work_dir> <toc_trans.json> [--title "..."]`：**底层导航目录同步**。将翻译后的章节名称同步刷入 `toc.ncx` / `nav.xhtml`，确保 Apple Books、微信读书、Kindle 等阅读器自带的侧边栏/弹出式原生系统目录 100% 显示纯中文。
+  - `sync-ncx <work_dir> <toc_trans.json> [--title "..."]`：**底层导航目录同步**。将翻译后的章节名称同步刷入 `toc.ncx` / `nav.xhtml`，确保阅读器自带的侧边栏/弹出式原生系统目录 100% 显示纯中文。
   - `pack <work_dir> <out.epub>`：严格按国际标准打包（`mimetype` 首位无压缩存储），确保各类阅读器完美兼容。
+
+---
+
+## ✒️ 核心翻译与文学重塑准则
+
+### 1. 破折号长句解构与重组准则（Dash Decomposition & Restructuring Rules）
+英语严肃传记（如罗伯特·卡洛《林登·约翰逊传》）与历史非虚构极爱在单句中塞入多个破折号（em-dash，`—`）承载背景插入语、同位语或心理闪回。**机械直译硬留多个“——”会彻底切碎中文意合节奏，造成严重翻译腔**。
+必须严格执行四大解构策略：
+1. **流水短句化**：将插入语提取为前后顺承的动词短句（用逗号或句号断开），恢复中文意合节奏；
+2. **前置吸附融入**：将人物身份/历史背景同位语转化为名词前的前置修饰语或定语；
+3. **显性逻辑连接**：将破折号暗含的因果、转折或让步化为“正因如此”、“即”、“归根结底”等显性关联词；
+4. **单句限单破折号守则**：单句严禁出现多对破折号，全句至多在文末保留一个破折号用于戏剧性转折或余韵收束。
+
+### 2. 出版级中文排版规范（Chinese Typography）
+- **正文首行缩进**：依据现代中文出版规范，正文自然段落必须严格缩进 2 汉字字符（`text-indent: 2em !important;`）。
+- **豁免白名单**：标题（`h1-h6`、`.title`、`.chapter-title`）、引文块（`blockquote`）、列表项（`li`）、表格（`td/th`）、居中行（`.center`）与图文插图（`p:has(img)`、`.illustration`）严格禁止首行缩进（`text-indent: 0 !important;`）。
 
 ---
 
@@ -57,7 +76,7 @@ python3 scripts/epub_tool.py unpack "<input.epub>" "<work_dir>"
 3. **调用翻译模型**：
    - 载入批次任务文件中的 `context_prev` 与 `context_next`，保障语境自然过渡；
    - 注入静态锁死的术语映射表（Glossary）；
-   - 执行严苛负向约束：严禁合并段落，严禁汉化链接或专有标记，输出严格 JSON 数组格式。
+   - 执行严苛负向约束：遵守**破折号解构重组准则**，严禁合并段落，严禁汉化链接或专有标记，输出严格 JSON 数组格式。
 
 ### 阶段四：硬性质检守门与单段自动纠错 (QA & Healing)
 合并当前章节所有批次译文后，执行：
@@ -66,13 +85,21 @@ python3 scripts/epub_tool.py qa-check "<work_dir>/cache/<ch_id>_blocks.json" "<w
 ```
 - 若 `passed: false`：读取报告中的 `healing_items`，**仅对出错的几个段落进行单段纠错重跑**，修正后合并回主文件，避免无谓重译全批次。
 
-### 阶段五：DOM 重构注入与标准打包
-1. 注入译文并添加双语排版样式：
+### 阶段五：DOM 重构注入、样式全局修复与标准打包
+1. 注入译文并添加出版级排版样式：
    ```bash
-   python3 scripts/epub_tool.py inject-blocks "<raw_xhtml>" "<trans.json>" "<raw_xhtml>" --mode bilingual
+   python3 scripts/epub_tool.py inject-blocks "<raw_xhtml>" "<trans.json>" "<raw_xhtml>" --mode mono
    ```
-2. 更新 `<work_dir>/progress.json` 章节完成状态。
-3. 全部章节完成后，规范化打包生成目标 EPUB：
+2. 全局样式表注入 2em 首行缩进与行距（防止原书 CSS 覆盖）：
+   ```bash
+   python3 scripts/epub_tool.py fix-style "<work_dir>" --mode mono
+   ```
+3. 同步底层系统阅读器目录（NCX/NAV）：
+   ```bash
+   python3 scripts/epub_tool.py sync-ncx "<work_dir>" "<toc_trans.json>" --title "书名"
+   ```
+4. 更新 `<work_dir>/progress.json` 章节完成状态。
+5. 全部章节完成后，规范化打包生成目标 EPUB：
    ```bash
    python3 scripts/epub_tool.py pack "<work_dir>" "<output_translated.epub>"
    ```
@@ -81,4 +108,4 @@ python3 scripts/epub_tool.py qa-check "<work_dir>/cache/<ch_id>_blocks.json" "<w
 
 ## ⚡ 性能与成本分级路由最佳实践
 - **海量常规章节（90% 正文）**：使用 **Flash 级别模型**。速度极快，在严格 JSON Schema + 上下文窗口约束下准确率极高，全书仅需约 80 万 Tokens（成本约 1~2 元）。
-- **皇冠重点章节（巴菲特序言、第 8 章市场先生、第 20 章安全边际）**：使用 **Pro 级别模型** 或开启 **Agentic 3-Pass 审校流**，追求文学典籍级的高端质感。
+- **皇冠重点章节（重大传记序言、核心转折篇章）**：使用 **Pro 级别模型** 或开启 **Agentic 3-Pass 审校流**，追求文学典籍级的高端质感。

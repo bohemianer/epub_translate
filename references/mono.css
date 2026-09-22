@@ -1,0 +1,49 @@
+/* === EPUB 中文出版级单语正文排版样式表 === */
+body {
+    font-family: "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", "Source Han Serif SC", "Noto Serif CJK SC", serif, -apple-system, sans-serif !important;
+}
+
+/* 中文正文自然段落首行缩进 2 字符，两端对齐，舒适行高 */
+p {
+    text-indent: 2em !important;
+    text-align: justify !important;
+    line-height: 1.75 !important;
+    margin-top: 0.25em !important;
+    margin-bottom: 0.25em !important;
+}
+
+/* 严格豁免清单：标题、引言引用、列表、表格、居中行、图文说明绝对不缩进 */
+h1, h2, h3, h4, h5, h6,
+h1 p, h2 p, h3 p, h4 p, h5 p, h6 p,
+blockquote, blockquote p, li, li p, dt, dd, td, th,
+.title, .subtitle, .chapter-title, .heading, .center,
+p.title, p.subtitle, p.chapter-title, p.heading, p.center,
+p[class*="title"], p[class*="heading"], p[class*="center"] {
+    text-indent: 0 !important;
+}
+
+/* 针对图片与插图的段落防偏心保护 */
+img, svg, picture, .image, .illustration, p.image, p.illustration, p[class*="image"], p[class*="illus"] {
+    text-indent: 0 !important;
+}
+
+p:has(img), p:has(svg), p:has(picture) {
+    text-indent: 0 !important;
+}
+
+p.center, p[class*="center"], div.center {
+    text-align: center !important;
+    text-indent: 0 !important;
+}
+
+blockquote {
+    margin-left: 1.5em !important;
+    margin-right: 1.5em !important;
+    padding-left: 0.8em !important;
+    border-left: 3px solid #cbd5e0 !important;
+}
+
+blockquote p {
+    text-indent: 0 !important;
+    line-height: 1.65 !important;
+}
