@@ -710,7 +710,7 @@ def pack_epub(work_dir, output_epub_path):
             for file in files:
                 full_path = os.path.join(root, file)
                 rel_path = os.path.relpath(full_path, raw_dir)
-                if rel_path == "mimetype":
+                if rel_path == "mimetype" or file.endswith(".bak") or file.startswith("."):
                     continue
                 zout.write(full_path, rel_path, compress_type=zipfile.ZIP_DEFLATED)
 
