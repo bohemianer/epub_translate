@@ -480,6 +480,8 @@ def inject_blocks(xhtml_path, trans_json_path, output_xhtml_path, mode="mono", i
         attrs = m.group(2) or ""
         inner_html = m.group(3)
         target_trans = escape(trans_map[idx].strip())
+        # 允许基础视觉与换行标签还原（如 <br/>, <em>, <strong>, <i>, <b>）
+        target_trans = re.sub(r'&lt;(br\s*/?|/?em|/?strong|/?i|/?b)&gt;', r'<\1>', target_trans, flags=re.IGNORECASE)
 
         # 1. 抽取原标签中的所有 <sup ...> 尾注
         sup_tags = re.findall(r'<sup\b[^>]*>.*?</sup>', inner_html, re.DOTALL | re.IGNORECASE)
@@ -498,19 +500,30 @@ def inject_blocks(xhtml_path, trans_json_path, output_xhtml_path, mode="mono", i
         a_links = list(re.finditer(r'(<a\s+[^>]*href=[\"\'][^\"\']+[\"\'][^>]*>)(.*?)(</a>)', inner_no_sup, re.DOTALL | re.IGNORECASE))
 
         if len(a_links) == 1:
-            # 单一链接块（目录项如 <a href="...">Title</a>）
+            # 单一链接块（目录项如 <a href="...">Title</a>，或尾注段落如 <a class="hlink" href="#fn1a">*</a>Body）
             m_a = a_links[0]
             clean_a_text = re.sub(r'<[^>]+>', '', m_a.group(2)).strip()
-            if clean_a_text and clean_a_text in m_a.group(2):
-                new_inner_a = m_a.group(2).replace(clean_a_text, restored_trans, 1)
-            elif 'class="calibre2"' in m_a.group(2) or 'class="calibre_13"' in m_a.group(2):
-                new_inner_a = f'<span class="calibre2"><span class="italic"><span class="calibre_13">{restored_trans}</span></span></span>'
+
+            is_fn = ('footnote' in attrs) or ('id="fn' in attrs) or (clean_a_text in ['*', '†', '‡'] and len(inner_no_sup) > len(m_a.group(0)) + 5)
+            if is_fn:
+                # 尾注段落：<a> 标签只是星号或数字锚点反向跳转链接，注释正文在 <a> 标签之后
+                fn_symbol = clean_a_text
+                fn_trans = restored_trans
+                if fn_symbol and fn_trans.startswith(fn_symbol):
+                    fn_trans = fn_trans[len(fn_symbol):].strip()
+                new_inner = m_a.group(0) + fn_trans
+                replacement = f"<{tag}{attrs}>{new_inner}</{tag}>"
             else:
-                new_inner_a = restored_trans
-            new_a = m_a.group(1) + new_inner_a + m_a.group(3)
-            # 在 inner_html 中替换
-            new_inner = inner_html[:m_a.start()] + new_a + inner_html[m_a.end():]
-            replacement = f"<{tag}{attrs}>{new_inner}</{tag}>"
+                if clean_a_text and clean_a_text in m_a.group(2):
+                    new_inner_a = m_a.group(2).replace(clean_a_text, restored_trans, 1)
+                elif 'class="calibre2"' in m_a.group(2) or 'class="calibre_13"' in m_a.group(2):
+                    new_inner_a = f'<span class="calibre2"><span class="italic"><span class="calibre_13">{restored_trans}</span></span></span>'
+                else:
+                    new_inner_a = restored_trans
+                new_a = m_a.group(1) + new_inner_a + m_a.group(3)
+                # 在 inner_html 中替换
+                new_inner = inner_html[:m_a.start()] + new_a + inner_html[m_a.end():]
+                replacement = f"<{tag}{attrs}>{new_inner}</{tag}>"
 
         elif len(a_links) == 2 and ("Chapter" in inner_html or "序言" in restored_trans or "章" in restored_trans or "Introduction" in inner_html):
             # 双链接章节标题（如 <a ...>Chapter 1</a><br/><a ...>Title</a>）
@@ -560,9 +573,9 @@ def inject_blocks(xhtml_path, trans_json_path, output_xhtml_path, mode="mono", i
             replacement = f"<{tag}{attrs}>{new_inner}</{tag}>"
 
         else:
-            # 检查是否有整体包裹的样式标签（如各级标题的 <span class="bold">、<span class="italic"> 等）
-            prefix_match = re.match(r'^(\s*(?:<span\b[^>]*>)+)', inner_no_sup)
-            suffix_match = re.search(r'((?:</span>\s*)+)$', inner_no_sup)
+            # 检查是否有整体包裹的样式标签（如各级标题的 <span...>、<em>、<i>、<strong> 等）
+            prefix_match = re.match(r'^(\s*(?:<(?:span|em|i|strong|b)\b[^>]*>)+)', inner_no_sup)
+            suffix_match = re.search(r'((?:</(?:span|em|i|strong|b)>\s*)+)$', inner_no_sup)
             if prefix_match and suffix_match:
                 p_str = prefix_match.group(1)
                 s_str = suffix_match.group(1)
