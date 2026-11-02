@@ -103,6 +103,19 @@ python3 scripts/epub_tool.py pack "./work_dir" "./output_translated.epub"
 
 ---
 
+## 🤖 /goal 长程自主全自动流水线（Autonomous Goal Pipeline）
+
+当面对数十万字的大部头著作时，可直接在 Antigravity 聊天框中使用 `/goal` 触发全自动无人值守长程推进：
+
+```markdown
+/goal 使用 epub-translator 技能规范，在工作目录 <work_dir> 中，读取 progress.json 进度断点，以【风格 A：典雅严谨·非虚构史诗版】和【纯中文出版级排版 mono】模式，按 Spine 章节顺序循环执行未完成章节：智能滑动窗口分批切片、深度翻译、QA 硬性质检纠错、DOM 注入与 progress.json 状态回写。每完成一个分卷（Part）或每 5 个章节自动进行阶段性重打包测试，直至全书所有章节 100% 翻译完成并输出最终 EPUB 电子书。
+```
+
+- **进度自愈**：严格依据 `<work_dir>/progress.json` 断点运行，永不重复翻译已完成章节；
+- **增量打包**：每完成一个核心分卷（Part）自动生成阶段性更新的试读 EPUB。
+
+---
+
 ## 📖 参考资料与样式规范
 - `references/prompts.md`：包含文学小说、社科科技、严肃传记的专属 Prompt 模板与**破折号解构案例对比**。
 - `references/mono.css`：中文出版级纯中文排版样式表。

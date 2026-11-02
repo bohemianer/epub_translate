@@ -4,10 +4,10 @@ description: >-
   专业级 EPUB 电子书全书翻译与出版排版专家。支持中英双语对照与纯中文两种排版模式；
   保持原书 DOM 结构、目录跳转、内嵌样式与插图；内置前置专有名词术语库（Glossary）抽取、
   优先忠于原文原则（忠实还原作者修辞与标点张力）、
-  自动化中文出版级首行缩进（默认 1em 即 1 个汉字）与行距自适应渲染、
-  三步级联审校流（Agentic 3-Pass Refinement）、自动化漏译错对齐质检（QA Guardrails）
-  及符合国际 EPUB 3.0/2.0 标准规范的重打包（mimetype 首位无压缩存储）。
-  Triggers: "翻译epub", "翻译电子书", "epub双语", "电子书翻译", "epub翻译", "translate epub", "epub对照", "制作双语电子书"
+  自动化中文出版级首行缩进（默认 2em 即 2 个汉字）与行距自适应渲染、
+  三步级联审校流（Agentic 3-Pass Refinement）、自动化漏译错对齐质检（QA Guardrails）、
+  支持 /goal 长程自主全书全自动批量流水线及符合国际 EPUB 3.0/2.0 标准规范的重打包（mimetype 首位无压缩存储）。
+  Triggers: "翻译epub", "翻译电子书", "epub双语", "电子书翻译", "epub翻译", "translate epub", "epub对照", "制作双语电子书", "/goal翻译电子书", "epub goal"
 ---
 
 # EPUB 电子书专业翻译技能规范 (epub-translator)
@@ -100,6 +100,46 @@ python3 scripts/epub_tool.py qa-check "<work_dir>/cache/<ch_id>_blocks.json" "<w
    ```bash
    python3 scripts/epub_tool.py pack "<work_dir>" "<output_translated.epub>"
    ```
+
+---
+
+## 🤖 /goal 长程自主全书全自动流水线（Autonomous Goal Pipeline）
+
+当面对数十万字、数十至上百个章节的大部头巨著时，用户可在聊天框输入 `/goal` 命令启动**全自动无人值守长程流水线（Overnight Task）**。Agent 将依据 `progress.json` 自动维持状态机循环，直到全书 100% 翻译、质检与打包完成。
+
+### 1. 标准触发指令规范
+```markdown
+/goal 使用 epub-translator 技能规范，在工作目录 <work_dir> 中，读取 progress.json 进度断点，以【风格 A：典雅严谨·非虚构史诗版】和【纯中文出版级排版 mono】模式，按 Spine 章节顺序循环执行未完成章节：智能滑动窗口分批切片、深度翻译、QA 硬性质检纠错、DOM 注入与 progress.json 状态回写。每完成一个分卷（Part）或每 5 个章节自动进行阶段性重打包测试，直至全书所有章节 100% 翻译完成并输出最终 EPUB 电子书。
+```
+
+### 2. 自主状态机运转机制 (Autonomous Loop)
+```mermaid
+flowchart TD
+    Start["读取 progress.json 断点"] --> CheckPending{"是否存在未完成章节 (PENDING)?"}
+    CheckPending -- 否 (100% 完成) --> SyncNCX["sync-ncx 同步中文导航"]
+    SyncNCX --> FinalPack["pack 国际标准重打包"]
+    FinalPack --> ReportDone["向用户汇报最终成果与输出路径"]
+    
+    CheckPending -- 是 --> PickNext["获取下一个未完成章节 (ch_id)"]
+    PickNext --> Extract["extract-blocks 抽取段落原子块"]
+    Extract --> Slice["slice-batches 划分 1500 词滑动窗口批次"]
+    Slice --> TranslateLoop["循环批次翻译 (注入 context_prev/next 与 glossary)"]
+    TranslateLoop --> QACheck{"qa-check 质检守护"}
+    QACheck -- 存在异常 --> SelfHeal["Healing 机制：仅重跑报错单段"]
+    SelfHeal --> QACheck
+    QACheck -- 质检通过 (1:1 对齐) --> Inject["inject-blocks 回填译文并保留锚点"]
+    Inject --> FixStyle["fix-style 确保出版级 2em 首行缩进"]
+    FixStyle --> UpdateProg["更新 progress.json 状态为 COMPLETED"]
+    UpdateProg --> Milestone{"是否为分卷结尾或每满 5 章?"}
+    Milestone -- 是 --> PeriodicPack["阶段性重打包测试 & 刷新试读本"]
+    PeriodicPack --> Start
+    Milestone -- 否 --> Start
+```
+
+### 3. 断点续译与抗崩溃机制
+- **零重复翻译**：每次启动或中断恢复时，Agent 严格读取 `progress.json` 的 `chapters_status`，已标记为 `COMPLETED` 的章节直接跳过；
+- **批次缓存隔离**：各章节的原子切片与翻译结果分别暂存于 `<work_dir>/cache/<ch_id>_trans.json`，即使网络波动或进程暂停，数据绝对安全；
+- **阶段性成果落盘**：每完成一个核心分卷（如 Part I, Part II）或每翻译 5 个章节，自动调用 `epub_tool.py pack` 生成当前最新的增量试读本，随时可供用户在阅读器中检阅。
 
 ---
 
