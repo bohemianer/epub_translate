@@ -4,3 +4,9 @@ __pycache__/
 .DS_Store
 *.swp
 *.swo
+*.epub
+books/*.epub
+work_dir/
+cache/
+raw/
+
