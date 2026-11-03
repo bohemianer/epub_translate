@@ -23,7 +23,7 @@ description: >-
 - 支持子命令：
   - `unpack <epub> <work_dir>`：解包 EPUB，解析 `container.xml`、`content.opf`，输出 `book_info.json` 与断点追踪 `progress.json`。
   - `extract-blocks <xhtml> -o <blocks.json>`：安全抽取章节内段落与标题标签（`p`, `h1-h6`, `li`, `blockquote` 等），建立原子索引。
-  - `slice-batches <blocks.json> <out_dir> [--max-words 1800]`：**智能批次切片引擎**。按 1,500 ~ 2,000 词自动划分批次，并封装**三层滑动窗口上下文**（前序末尾 2 段 + 后续起始 1 段）。
+  - `slice-batches <blocks.json> <out_dir> [--max-words 3000] [--max-blocks 50]`：**智能批次切片引擎**。按 2,500 ~ 3,500 词自动划分批次（默认 3,000 词），大幅降低往返通信轮次并封装**三层滑动窗口上下文**（前序末尾 2 段 + 后续起始 1 段）。
   - `inject-blocks <xhtml> <trans.json> <out_xhtml> [--mode bilingual|mono] [--indent 2em|1em]`：回填译文，注入深色/浅色自适应高雅排版样式。自动注入**中文出版级首行缩进（默认 2em 即空 2 个汉字字符，中国图书出版标准）**，智能豁免各级标题、引言块、居中段落、插图及表格。自动保留原书各级标题的内嵌层级样式包裹标签（`<span class="bold">`、`<span class="italic">` 等），确保排版视觉阶梯感与原书完全一致。
   - `fix-style <work_dir> [--mode mono|bilingual] [--indent 2em|1em]`：**全局排版样式修复引擎**。在 EPUB 的所有全局 CSS 样式表（`stylesheet.css` 等）中追加出版级中文段落排版规则，确保各类阅读器（Apple Books、微信读书、Kindle 等）强制生效标准 2 字符（2em）缩进与舒适行距。
   - `qa-check <src.json> <trans.json>`：**程序化硬性质检**。检验索引数量 1:1 对齐、字符长度离群值（防漏译/复读）、关键数字与年代遗失检测，自动输出单段纠错清单。
@@ -143,6 +143,22 @@ flowchart TD
 
 ---
 
-## ⚡ 性能与成本分级路由最佳实践
+## ⚡ 性能优化与高吞吐全速流水线规范 (High-Throughput Best Practices)
+
+为避免大部头翻译过程中因频繁工具调用、单批往返时延（RTT）及主会话上下文膨胀导致的显著减速，必须执行以下提速规范：
+
+### 1. 大容量自适应切片（3,000 词 / 50 段）
+- 现代长上下文模型具备强大的注意力掌控力。将切片阈值从旧版 1,500 词全面调大至 **3,000 词 / 50 段**。
+- 单个 100~200 段的庞大长章节批次数从 15~25 个锐减至 **3~5 个批次**，直接砍掉 **70% 以上的往返网络与工具调度开销**。
+
+### 2. 批次聚合处理（Batch Aggregation）
+- **禁止单批往返**：严禁每读 1 个 batch 就执行一次 `write_file` 并等待下轮返回。
+- **合并读写**：单轮交互中应一次性连续读取并处理 2~3 个批次，合并生成并写入，大幅降低 Agent 状态机调度延迟。
+
+### 3. 子智能体（Subagents）章节级独立并行
+- **上下文解耦**：当全书剩余多个章节时，主 Agent 应使用 `invoke_subagent` 按章节或分卷派发任务给独立的 Subagent 执行。
+- **免受主会话污染**：每个 Subagent 拥有独立的干净上下文，推理速度处于最佳状态（首字延迟与生成速度提升 3~5 倍），执行完毕后将 `cache/<ch_id>_trans.json` 交回主线程进行质检与注入。
+
+### 4. 模型分级路由
 - **海量常规章节（90% 正文）**：使用 **Flash 级别模型**。速度极快，在严格 JSON Schema + 上下文窗口约束下准确率极高，全书仅需约 80 万 Tokens（成本约 1~2 元）。
 - **皇冠重点章节（重大传记序言、核心转折篇章）**：使用 **Pro 级别模型** 或开启 **Agentic 3-Pass 审校流**，追求文学典籍级的高端质感。

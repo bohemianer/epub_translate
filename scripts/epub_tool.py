@@ -288,10 +288,10 @@ def extract_blocks_from_file(xhtml_path, output_json=None):
     return blocks
 
 
-def slice_batches(blocks_json_path, output_dir, max_words=1800, max_blocks=25):
+def slice_batches(blocks_json_path, output_dir, max_words=3000, max_blocks=50):
     """
     智能批次切片引擎：
-    按 1,500 ~ 2,000 英文词划分批次，并封装三层滑动窗口上下文。
+    按 2,500 ~ 3,500 英文词划分批次，兼顾长上下文与高吞吐率，并封装三层滑动窗口上下文。
     """
     with open(blocks_json_path, 'r', encoding='utf-8') as f:
         blocks = json.load(f)
@@ -785,8 +785,8 @@ def main():
     p_slice = subparsers.add_parser("slice-batches", help="智能批次切片引擎（生成带上下文滑动窗口的批次任务）")
     p_slice.add_argument("blocks_json", help="章节提取出的 blocks.json")
     p_slice.add_argument("output_dir", help="输出批次文件的目录")
-    p_slice.add_argument("--max-words", type=int, default=1800, help="单批最大词数（默认 1800 词）")
-    p_slice.add_argument("--max-blocks", type=int, default=25, help="单批最大段落数（默认 25 段）")
+    p_slice.add_argument("--max-words", type=int, default=3000, help="单批最大词数（默认 3000 词，兼顾长上下文与高吞吐率）")
+    p_slice.add_argument("--max-blocks", type=int, default=50, help="单批最大段落数（默认 50 段）")
 
     # inject-blocks
     p_inject = subparsers.add_parser("inject-blocks", help="将翻译文本注入回 XHTML（高保真保留引用与尾注链接）")
