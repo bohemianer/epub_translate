@@ -734,7 +734,11 @@ def pack_epub(work_dir, output_epub_path):
 
 def sync_ncx(work_dir, toc_trans_json, book_title=None):
     raw_dir = os.path.join(work_dir, "raw")
-    ncx_files = [os.path.join(raw_dir, f) for f in os.listdir(raw_dir) if f.endswith(".ncx")]
+    ncx_files = []
+    for root, dirs, files in os.walk(raw_dir):
+        for f in files:
+            if f.lower().endswith(".ncx"):
+                ncx_files.append(os.path.join(root, f))
     if not ncx_files:
         print("[!] 未找到 .ncx 导航文件")
         return False
